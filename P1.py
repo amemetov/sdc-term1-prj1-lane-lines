@@ -7,9 +7,12 @@ def draw_lines(img, lines, roi_apex, color=[255, 0, 0], thickness=6):
         return
 
     # draw origin lines
-    for line in lines:
-        for x1, y1, x2, y2 in line:
-            cv2.line(img, (x1, y1), (x2, y2), color, thickness)
+    # if True:
+    #     for line in lines:
+    #         for x1, y1, x2, y2 in line:
+    #             cv2.line(img, (x1, y1), (x2, y2), color, thickness)
+    #     return
+
 
     height = img.shape[0]
     width = img.shape[1]
@@ -70,7 +73,7 @@ def calc_y_interval(left_lines, right_lines, height, roi_apex):
     min_y = roi_apex#height / 2
 
     max_y = max(left_lines[0].y1, max_y)
-    min_y = max(left_lines[-1].y2, min_y)
+    min_y = min(left_lines[-1].y2, min_y)
 
     max_y = max(right_lines[0].y1, max_y)
     min_y = min(right_lines[-1].y2, min_y)
