@@ -7,11 +7,11 @@ def draw_lines(img, lines, roi_apex, color=[255, 0, 0], thickness=6):
         return
 
     # draw origin lines
-    # if True:
-    #     for line in lines:
-    #         for x1, y1, x2, y2 in line:
-    #             cv2.line(img, (x1, y1), (x2, y2), color, thickness)
-    #     return
+    if False:
+        for line in lines:
+            for x1, y1, x2, y2 in line:
+                cv2.line(img, (x1, y1), (x2, y2), color, thickness)
+        #return
 
 
     height = img.shape[0]
@@ -19,22 +19,37 @@ def draw_lines(img, lines, roi_apex, color=[255, 0, 0], thickness=6):
 
     sorted_lines = sort_lines_by_y(lines)
     left_lines, right_lines = split_lines(sorted_lines, width, height)
-    (min_y, max_y) = calc_y_interval(left_lines, right_lines, height, roi_apex)
 
-    left_lines_x, left_lines_y = avg_line(left_lines, gen_inner_points=True)
-    right_lines_x, right_lines_y = avg_line(right_lines, gen_inner_points=True)
+    # debug split lines
+    if False:
+        for l in left_lines:
+            cv2.line(img, (l.x1, l.y1), (l.x2, l.y2), [0, 255, 0], thickness)
 
-    # we need to find x by y value, so change order of arguments
-    left_reg = np.poly1d(np.polyfit(left_lines_y, left_lines_x, 1))
-    left_x_start = left_reg(max_y)
-    left_x_end = left_reg(min_y)
+        for l in right_lines:
+            cv2.line(img, (l.x1, l.y1), (l.x2, l.y2), [0, 0, 255], thickness)
 
-    right_reg = np.poly1d(np.polyfit(right_lines_y, right_lines_x, 1))
-    right_x_start = right_reg(max_y)
-    right_x_end = right_reg(min_y)
+        return
 
-    cv2.line(img, (int(left_x_start), int(max_y)), (int(left_x_end), int(min_y)), [0, 255, 0], thickness)
-    cv2.line(img, (int(right_x_start), int(max_y)), (int(right_x_end), int(min_y)), [0, 0, 255], thickness)
+    (min_y, max_y) = (roi_apex, height)#calc_y_interval(left_lines, right_lines, height, roi_apex)
+
+    if len(left_lines) > 0:
+        left_lines_x, left_lines_y = avg_line(left_lines, gen_inner_points=True)
+
+        # we need to find x by y value, so change order of arguments
+        left_reg = np.poly1d(np.polyfit(left_lines_y, left_lines_x, 1))
+        left_x_start = left_reg(max_y)
+        left_x_end = left_reg(min_y)
+
+        cv2.line(img, (int(left_x_start), int(max_y)), (int(left_x_end), int(min_y)), [0, 255, 0], thickness)
+
+    if len(right_lines) > 0:
+        right_lines_x, right_lines_y = avg_line(right_lines, gen_inner_points=True)
+
+        right_reg = np.poly1d(np.polyfit(right_lines_y, right_lines_x, 1))
+        right_x_start = right_reg(max_y)
+        right_x_end = right_reg(min_y)
+
+        cv2.line(img, (int(right_x_start), int(max_y)), (int(right_x_end), int(min_y)), [0, 0, 255], thickness)
 
 def avg_line(lines, gen_inner_points=True):
     # add more points for longer lines to avoid effect of noisy short lines
@@ -66,8 +81,6 @@ def avg_line(lines, gen_inner_points=True):
     return (lines_x, lines_y)
 
 
-
-
 def calc_y_interval(left_lines, right_lines, height, roi_apex):
     max_y = height - 10
     min_y = roi_apex#height / 2
@@ -82,6 +95,31 @@ def calc_y_interval(left_lines, right_lines, height, roi_apex):
 
 
 def split_lines(lines, width, height):
+    middle_x = width / 2
+
+    ox = Line(0, 0, 1, 0)
+
+    left_lines_angle_threshold_start = math.radians(-30)
+    left_lines_angle_threshold_end = math.radians(-60)
+
+    right_lines_angle_threshold_start = math.radians(-120)
+    right_lines_angle_threshold_end = math.radians(-155)
+
+    left_lines = []
+    right_lines = []
+
+    for l in lines:
+        angle = ox.angle_between_lines2(l)
+
+        if l.x1 < middle_x and left_lines_angle_threshold_end <= angle <= left_lines_angle_threshold_start:
+            left_lines.append(l)
+        elif l.x1 > middle_x and right_lines_angle_threshold_end <= angle <= right_lines_angle_threshold_start:
+            right_lines.append(l)
+
+    return (left_lines, right_lines)
+
+
+def split_lines_old(lines, width, height):
     # lines is list of Line instances sorted by y1 in reverse order
 
     middle_x = width / 2
@@ -163,8 +201,7 @@ def sort_lines_by_y(lines):
     sorted_lines.sort(key=lambda l: l.y1, reverse=True)
     return sorted_lines
 
-def center(x1, y1, x2, y2):
-    return (x1 + x2)/2, (y1 + y2)/2
+
 
 class Line(object):
     def __init__(self, x1, y1, x2, y2):
@@ -243,93 +280,6 @@ class Line(object):
 
     def __repr__(self):
         return str(self)
-
-class Bounds(object):
-    def __init__(self):
-        self.bounds = []
-
-    def add_line(self, line):
-        if not self.add_line_to_bounds(line):
-            bound = RectBound(line)
-            # get correctly ordered line (from bottom to top)
-            new_line = bound.line
-            (_, new_y1, _, _) = new_line
-
-            # sort bounds by y
-            # TODO: use binary search
-            idx = 0
-            for b in self.bounds:
-                (_, b_y1, _, _) = b.line
-                if new_y1 > b_y1:
-                    self.bounds.insert(idx, bound)
-                    return
-                idx += 1
-
-            self.bounds.insert(idx, bound)
-
-
-    def add_line_to_bounds(self, line):
-        for bound in self.bounds:
-            if bound.add_line_if_can(line):
-                return True
-        return False
-
-    def get_lines(self):
-        lines = []
-        for b in self.bounds:
-            lines.append(b.line)
-
-        return lines
-
-
-
-class RectBound(object):
-    def __init__(self, line, max_dx = 20, max_dy = 20):
-        (x1, y1, x2, y2) = line
-        min_x = min(x1, x2)
-        max_x = max(x1, x2)
-        min_y = min(y1, y2)
-        max_y = max(y1, y2)
-
-        self.left = min_x - max_dx
-        self.right = max_x + max_dx
-        self.bottom = min_y - max_dy
-        self.top = max_y + max_dy
-
-        self.line = None
-        #self.lines = []
-        self.__add_line(line)
-
-    def add_line_if_can(self, line):
-        if self.__can_contain_line(line):
-            self.__add_line(line)
-            return True
-        return False
-
-    def __add_line(self, line):
-        (x1, y1, x2, y2) = line
-        line = (x1, y1, x2, y2) if y1 < y2 else (x2, y2, x1, y1)
-
-        if self.line is None:
-            self.line = line
-        else:
-            # make average
-            (new_x1, new_y1, new_x2, new_y2) = line
-            (this_x1, this_y1, this_x2, this_y2) = self.line
-            self.line = ((new_x1 + this_x1)/2, (new_y1 + this_y1)/2, (new_x2 + this_x2)/2, (new_y2 + this_y2)/2)
-
-
-        #self.lines.append(line)
-
-    def __can_contain_line(self, line):
-        (x1, y1, x2, y2) = line
-        min_x = min(x1, x2)
-        max_x = max(x1, x2)
-        min_y = min(y1, y2)
-        max_y = max(y1, y2)
-
-        return self.left <= min_x and self.right >= max_x and self.bottom <= min_y and self.top >= max_y
-
 
 
 
