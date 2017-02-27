@@ -30,26 +30,23 @@ def draw_lines(img, lines, roi_apex, color=[255, 0, 0], thickness=6):
 
         return
 
-    (min_y, max_y) = (roi_apex, height)#calc_y_interval(left_lines, right_lines, height, roi_apex)
+    (min_y, max_y) = (roi_apex, height)
 
-    if len(left_lines) > 0:
-        left_lines_x, left_lines_y = avg_line(left_lines, gen_inner_points=True)
+    fit_lines_and_render(img, left_lines, min_y, max_y, [0, 255, 0], thickness)
+    fit_lines_and_render(img, right_lines, min_y, max_y, [0, 0, 255], thickness)
+
+
+def fit_lines_and_render(img, lines, min_y, max_y, color, thickness):
+    if len(lines) > 0:
+        left_lines_x, left_lines_y = avg_line(lines, gen_inner_points=True)
 
         # we need to find x by y value, so change order of arguments
         left_reg = np.poly1d(np.polyfit(left_lines_y, left_lines_x, 1))
         left_x_start = left_reg(max_y)
         left_x_end = left_reg(min_y)
 
-        cv2.line(img, (int(left_x_start), int(max_y)), (int(left_x_end), int(min_y)), [0, 255, 0], thickness)
+        cv2.line(img, (int(left_x_start), int(max_y)), (int(left_x_end), int(min_y)), color, thickness)
 
-    if len(right_lines) > 0:
-        right_lines_x, right_lines_y = avg_line(right_lines, gen_inner_points=True)
-
-        right_reg = np.poly1d(np.polyfit(right_lines_y, right_lines_x, 1))
-        right_x_start = right_reg(max_y)
-        right_x_end = right_reg(min_y)
-
-        cv2.line(img, (int(right_x_start), int(max_y)), (int(right_x_end), int(min_y)), [0, 0, 255], thickness)
 
 def avg_line(lines, gen_inner_points=True):
     # add more points for longer lines to avoid effect of noisy short lines
@@ -81,19 +78,6 @@ def avg_line(lines, gen_inner_points=True):
     return (lines_x, lines_y)
 
 
-def calc_y_interval(left_lines, right_lines, height, roi_apex):
-    max_y = height - 10
-    min_y = roi_apex#height / 2
-
-    max_y = max(left_lines[0].y1, max_y)
-    min_y = min(left_lines[-1].y2, min_y)
-
-    max_y = max(right_lines[0].y1, max_y)
-    min_y = min(right_lines[-1].y2, min_y)
-
-    return (min_y, max_y)
-
-
 def split_lines(lines, width, height):
     middle_x = width / 2
 
@@ -117,75 +101,6 @@ def split_lines(lines, width, height):
             right_lines.append(l)
 
     return (left_lines, right_lines)
-
-
-def split_lines_old(lines, width, height):
-    # lines is list of Line instances sorted by y1 in reverse order
-
-    middle_x = width / 2
-
-    #max_dist = 10
-    max_straight_angle = math.radians(5)
-    #max_rotate_angle = math.radians(30)
-
-    max_x_diff_on_top = 25 # px
-
-    #ox = Line(0, 0, 1, 0)
-
-    left_lines_candidate_groups = [] #array of array
-    right_lines_candidate_groups = [] #array of array
-
-    for line in lines:
-        slope = line.slope()
-
-        x_top = line.calc_x(height)
-
-        if slope < 0 and line.x1 < middle_x and 0 <= x_top < middle_x:
-            for left_lines in left_lines_candidate_groups:
-                left_line = left_lines[0]
-                left_line_x_top = left_line.calc_x(height)
-
-                angle = left_line.angle_between_lines2(line)
-
-                if left_line_x_top - max_x_diff_on_top <= x_top <= left_line_x_top + max_x_diff_on_top \
-                        and math.fabs(angle) < max_straight_angle:
-                    left_lines.append(line)
-                    continue
-
-            # not found group - create new group
-            left_lines_candidate_groups.append([line])
-        elif slope >= 0 and line.x1 > middle_x and middle_x < x_top <= width:
-            for right_lines in right_lines_candidate_groups:
-                right_line = right_lines[0]
-                right_line_x_top = right_line.calc_x(height)
-
-                angle = right_line.angle_between_lines2(line)
-
-                if right_line_x_top - max_x_diff_on_top <= x_top <= right_line_x_top + max_x_diff_on_top \
-                        and math.fabs(angle) < max_straight_angle:
-                    right_lines.append(line)
-                    continue
-
-            # not found group - create new group
-            right_lines_candidate_groups.append([line])
-
-    return (get_result(left_lines_candidate_groups), get_result(right_lines_candidate_groups))
-
-
-def get_result(lines_candidate_groups):
-    result_lines = None
-    max_num = -1
-    for lines in lines_candidate_groups:
-        total_len = 0
-        for l in lines:
-            total_len += l.lengthSq()
-
-        #num = len(lines)
-        num = total_len
-        if num > max_num:
-            max_num = num
-            result_lines = lines
-    return result_lines
 
 
 def sort_lines_by_y(lines):
@@ -282,6 +197,83 @@ class Line(object):
         return str(self)
 
 
+def split_lines_old(lines, width, height):
+    # lines is list of Line instances sorted by y1 in reverse order
 
+    middle_x = width / 2
+
+    #max_dist = 10
+    max_straight_angle = math.radians(5)
+    #max_rotate_angle = math.radians(30)
+
+    max_x_diff_on_top = 25 # px
+
+    #ox = Line(0, 0, 1, 0)
+
+    left_lines_candidate_groups = [] #array of array
+    right_lines_candidate_groups = [] #array of array
+
+    for line in lines:
+        slope = line.slope()
+
+        x_top = line.calc_x(height)
+
+        if slope < 0 and line.x1 < middle_x and 0 <= x_top < middle_x:
+            for left_lines in left_lines_candidate_groups:
+                left_line = left_lines[0]
+                left_line_x_top = left_line.calc_x(height)
+
+                angle = left_line.angle_between_lines2(line)
+
+                if left_line_x_top - max_x_diff_on_top <= x_top <= left_line_x_top + max_x_diff_on_top \
+                        and math.fabs(angle) < max_straight_angle:
+                    left_lines.append(line)
+                    continue
+
+            # not found group - create new group
+            left_lines_candidate_groups.append([line])
+        elif slope >= 0 and line.x1 > middle_x and middle_x < x_top <= width:
+            for right_lines in right_lines_candidate_groups:
+                right_line = right_lines[0]
+                right_line_x_top = right_line.calc_x(height)
+
+                angle = right_line.angle_between_lines2(line)
+
+                if right_line_x_top - max_x_diff_on_top <= x_top <= right_line_x_top + max_x_diff_on_top \
+                        and math.fabs(angle) < max_straight_angle:
+                    right_lines.append(line)
+                    continue
+
+            # not found group - create new group
+            right_lines_candidate_groups.append([line])
+
+    return (get_result(left_lines_candidate_groups), get_result(right_lines_candidate_groups))
+
+def get_result(lines_candidate_groups):
+    result_lines = None
+    max_num = -1
+    for lines in lines_candidate_groups:
+        total_len = 0
+        for l in lines:
+            total_len += l.lengthSq()
+
+        #num = len(lines)
+        num = total_len
+        if num > max_num:
+            max_num = num
+            result_lines = lines
+    return result_lines
+
+def calc_y_interval(left_lines, right_lines, height, roi_apex):
+    max_y = height - 10
+    min_y = roi_apex#height / 2
+
+    max_y = max(left_lines[0].y1, max_y)
+    min_y = min(left_lines[-1].y2, min_y)
+
+    max_y = max(right_lines[0].y1, max_y)
+    min_y = min(right_lines[-1].y2, min_y)
+
+    return (min_y, max_y)
 
 
