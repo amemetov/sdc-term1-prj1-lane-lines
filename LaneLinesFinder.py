@@ -394,9 +394,9 @@ class Line(object):
         return (-self.a*x - self.c)/self.b
 
     def length(self):
-        return math.sqrt(self.length_sq())
+        return math.sqrt(self.lengthSq())
 
-    def length_sq(self):
+    def lengthSq(self):
         ax = self.x2 - self.x1
         ay = self.y2 - self.y1
         return (ax*ax + ay*ay)
@@ -422,6 +422,26 @@ class Line(object):
 
     def distance_to_pt(self, pt_x, pt_y):
         return math.fabs(self.a * pt_x + self.b * pt_y + self.c) / math.sqrt(self.a * self.a + self.b * self.b)
+
+    def is_almost_equal(self, line, eps=0.1):
+        return math.fabs(self.a - line.a) < eps and math.fabs(self.b - line.b) < eps and math.fabs(self.c - line.c) < eps
+
+    def is_almost_parallel(self, line, eps=0.1):
+        if self.a == 0 or line.a == 0:
+            # both horizontal?
+            return self.a == line.a
+
+        if self.b == 0 or line.b == 0:
+            # both vertical ?
+            return self.b == line.b
+
+        return math.fabs(self.a / line.a - self.b / line.b) < eps
+
+    def is_horizontal(self, eps=0.1):
+        return math.fabs(self.a) < eps
+
+    def is_vertical(self):
+        return self.b == 0
 
     def __str__(self):
         return "({0},{1}) -> ({2},{3})".format(self.x1, self.y1, self.x2, self.y2)
