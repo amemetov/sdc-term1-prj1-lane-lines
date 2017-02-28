@@ -123,7 +123,7 @@ class LaneLinesFinder(object):
     def __init__(self, config=None,
                  line_render_thickness=10,
                  left_line_color=[255, 0, 0], right_line_color=[255, 0, 0],
-                 avg_models_len=10, avg_models_weights_start=0.01, avg_models_weights_stop=0.1,
+                 avg_models_len=10, avg_models_weights_start=0.01, avg_models_weights_stop=0.99, avg_models_mse_threshold = 100,
                  draw_origin_lines=False, store_images=False):
         self.result_dir = "video_result/"
         self.image_frame_idx = 0
@@ -140,6 +140,7 @@ class LaneLinesFinder(object):
         self.avg_models_len = avg_models_len
         self.avg_models_weights_start = avg_models_weights_start
         self.avg_models_weights_stop = avg_models_weights_stop
+        self.avg_models_mse_threshold = avg_models_mse_threshold
 
         self.last_lane_models = deque([], maxlen=self.avg_models_len)
 
@@ -252,7 +253,11 @@ class LaneLinesFinder(object):
 
             # we need to find x by y value, so change order of arguments
             result_model = np.poly1d(np.polyfit(left_lines_y, left_lines_x, 1))
-            result_model = self.avg_model(result_model, is_left)
+            mse = np.mean((result_model(left_lines_y) - left_lines_x) ** 2)
+
+            # use previous models when our current fit is not good enough
+            if mse > self.avg_models_mse_threshold:
+                result_model = self.avg_model(result_model, is_left)
 
             left_x_start = result_model(max_y)
             left_x_end = result_model(min_y)
@@ -291,14 +296,14 @@ class LaneLinesFinder(object):
         lines_x = []
         lines_y = []
         for l in lines:
-            len = l.x2 - l.x1
-            len_abs = math.fabs(len)
-
             lines_x.append(int(l.x1))
             lines_y.append(int(l.y1))
 
             # add more points for longer lines to avoid influence of noisy short lines
             if self.extrapolate_consider_line_len:
+                len = l.x2 - l.x1
+                len_abs = math.fabs(len)
+
                 if len_abs >= 2 * self.extrapolate_step_len:
                     step_num = int(len / self.extrapolate_step_len)
                     # poly = np.poly1d(np.polyfit([l.x1, l.x2], [l.y1, l.y2], 1))
@@ -394,9 +399,9 @@ class Line(object):
         return (-self.a*x - self.c)/self.b
 
     def length(self):
-        return math.sqrt(self.lengthSq())
+        return math.sqrt(self.length_sq())
 
-    def lengthSq(self):
+    def length_sq(self):
         ax = self.x2 - self.x1
         ay = self.y2 - self.y1
         return (ax*ax + ay*ay)
