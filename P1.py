@@ -7,7 +7,7 @@ def draw_lines(img, lines, roi_apex, color=[255, 0, 0], thickness=6):
         return
 
     # draw origin lines
-    if False:
+    if True:
         for line in lines:
             for x1, y1, x2, y2 in line:
                 cv2.line(img, (x1, y1), (x2, y2), color, thickness)
@@ -94,6 +94,9 @@ def split_lines(lines, width, height):
 
     for l in lines:
         angle = ox.angle_between_lines2(l)
+
+        #if l.y1 < 500:
+            # try to identify
 
         if l.x1 < middle_x and left_lines_angle_threshold_end <= angle <= left_lines_angle_threshold_start:
             left_lines.append(l)
