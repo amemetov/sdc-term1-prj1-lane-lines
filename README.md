@@ -14,7 +14,7 @@ The goals / steps of this project are the following:
 
 ###1. Pipeline
 
-My pipeline consisted of following steps (implemented in file [LaneLinesFinder.py](LaneLinesFinder.py)):
+My pipeline consisted of the following steps (implemented in file [LaneLinesFinder.py](LaneLinesFinder.py)):
 
 1. Filter pixels by colors (retain white and yellow pixels)
 
@@ -26,7 +26,7 @@ My pipeline consisted of following steps (implemented in file [LaneLinesFinder.p
 
 5. Convert edges to line segments using Hough transform
 
-6. Split line segments on the left and right lanes depending on angle between a current line and X-axis
+6. Split line segments on the left and right line groups depending on angle between a current line and X-axis
 
 7. Extrapolate line segments using Least Squares (numpy.polyfit is used)
 
