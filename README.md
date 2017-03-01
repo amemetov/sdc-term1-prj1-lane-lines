@@ -14,7 +14,7 @@ The goals / steps of this project are the following:
 
 ###1. Pipeline
 
-My pipeline consisted of following steps:
+My pipeline consisted of following steps (implemented in file [LaneLinesFinder.py](LaneLinesFinder.py)):
 
 1. Filter pixels by colors (retain white and yellow pixels)
 
@@ -53,7 +53,7 @@ My pipeline is not robust, I'm not sure that it will give a good result for more
 * night or even sunny day
 * when a camera is not placed close to the center of a lane
 * when a car is changing a lane
-* straight lines is poor model for winding roads
+* straight lines is a poor model for winding roads
 
 I tried to solve the last pointed case (winding roads at the Challenge case) using quadratic function,
 but it gave very unstable result. I think because my edge/lines detector did not detect all necessary lines.
