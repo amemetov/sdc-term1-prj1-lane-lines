@@ -31,19 +31,18 @@ My pipeline consisted of following steps:
 7. Extrapolate line segments using Least Squares (numpy.polyfit is used)
 
 
-I have disabled filtering yellow pixels code, cause color ranges, I have used to separate pixels,
+I have disabled filtering yellow pixels code, cause color ranges, I used to separate pixels,
 give good result for Challenge video, but for Yellow case such filtering gives worse result.
-On the other hand currently used filtering (retains wide range pixels) produces a lot of noisy edges/lines 
-on the Challenge video on the bright piece of road (Red colors - line segments detected by HoughLines, Green - Left Lane, Blue - Right Lane):
+On the other hand currently used filtering produces a lot of noisy edges/lines 
+on the Challenge video (cause retains wide range pixels) on the bright piece of the road (Red colors - line segments detected by HoughLines, Green - Left Lane, Blue - Right Lane):
 
-![Image with noisy segment lines][test_images/challenge-img-105-noisy.png]
+<img src="test_images/challenge-img-105-noisy.png" width="480" alt="Image with noisy segment lines" />
 
 To fix this problem I have tried cv2.fastNlMeansDenoising to denoise the image, it gave a good result, but had poor performance.
 Then I have added averaging a lane line fit model using last (by default 10) models 
 if the MSE for the fit model is greater than some pointed threshold value:
 
-![Averaged model][test_images/challenge-img-105-averaged-model.png]
-
+<img src="test_images/challenge-img-105-averaged-model.png" width="480" alt="Averaged model" />
 
 
 ###2. Potential shortcomings
@@ -61,6 +60,7 @@ but it gave very unstable result. I think because my edge/lines detector did not
 
 
 ###3. Possible improvements
+
 I think testing all above pointed potential shortcoming cases will produce a lot of the information for further improvements.
 
 For some cases (for example sunny day) I think I should try to preprocess image, for example to use Histogram Equalization or CLAHE (Contrast Limited Adaptive Histogram Equalization).
