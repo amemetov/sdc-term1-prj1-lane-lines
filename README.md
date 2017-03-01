@@ -38,9 +38,9 @@ on the Challenge video (cause retains wide range pixels) on the bright piece of 
 
 <img src="test_images/challenge-img-105-noisy.png" width="480" alt="Image with noisy segment lines" />
 
-To fix this problem I have tried cv2.fastNlMeansDenoising to denoise the image, it gave a good result, but had poor performance.
-Then I have added averaging a lane line fit model using last (by default 10) models 
-if the MSE for the fit model is greater than some pointed threshold value:
+To fix this problem I have tried cv2.fastNlMeansDenoising to denoise the image, it gave a good result, but had poor performance, so I decided to use other solution.
+
+Then I have added averaging a lane line fit model using last (by default 10) models if the MSE for the fit model is greater than some pointed threshold value. The result is below:
 
 <img src="test_images/challenge-img-105-averaged-model.png" width="480" alt="Averaged model" />
 
