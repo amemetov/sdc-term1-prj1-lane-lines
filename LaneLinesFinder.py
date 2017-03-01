@@ -12,7 +12,7 @@ def grayscale(img):
     you should call plt.imshow(gray, cmap='gray')"""
     return cv2.cvtColor(img, cv2.COLOR_RGB2GRAY)
     # Or use BGR2GRAY if you read an image with cv2.imread()
-    # return cv2.cvtColor(img, cv2.COLOR_BGR2GRAY)
+    #return cv2.cvtColor(img, cv2.COLOR_BGR2GRAY)
 
 
 def canny(img, low_threshold, high_threshold):
@@ -258,15 +258,18 @@ class LaneLinesFinder(object):
             # use previous models when our current fit is not good enough
             if mse > self.avg_models_mse_threshold:
                 result_model = self.avg_model(result_model, is_left)
+        else:
+            result_model = self.avg_model(None, is_left)
 
-            left_x_start = result_model(max_y)
-            left_x_end = result_model(min_y)
+        if result_model is None:
+            return None
 
-            cv2.line(img, (int(left_x_start), int(max_y)), (int(left_x_end), int(min_y)), color, thickness)
+        left_x_start = result_model(max_y)
+        left_x_end = result_model(min_y)
 
-            return result_model
+        cv2.line(img, (int(left_x_start), int(max_y)), (int(left_x_end), int(min_y)), color, thickness)
 
-        return None
+        return result_model
 
     def avg_model(self, model, is_left):
         models_num = len(self.last_lane_models)
@@ -286,8 +289,11 @@ class LaneLinesFinder(object):
                 coeffs_accum += coeffs
             idx += 1
 
-        coeffs_accum += model.coeffs
-        result_coeffs = coeffs_accum / (np.sum(weights) + 1)
+        if model is not None:
+            coeffs_accum += model.coeffs
+            result_coeffs = coeffs_accum / (np.sum(weights) + 1)
+        else:
+            result_coeffs = coeffs_accum / np.sum(weights)
 
         return np.poly1d(result_coeffs)
 
@@ -344,21 +350,26 @@ class LaneLinesFinder(object):
 
     def filter_white_and_yellow_pixels(self, origin_img):
         hsv = cv2.cvtColor(origin_img, cv2.COLOR_BGR2HSV)
-
         lower_white = np.array([0, 0, 200], dtype=np.uint8)
         upper_white = np.array([180, 255, 255], dtype=np.uint8)
         mask_white = cv2.inRange(hsv, lower_white, upper_white)
         res_white = cv2.bitwise_and(origin_img, origin_img, mask=mask_white)
+        return res_white
 
-        # lower_yellow = np.array([90, 100, 100])
-        # upper_yellow = np.array([110, 255, 255])
+        # # filter white pixels using RGB
+        # lower_white = np.array([205, 205, 205])
+        # upper_white = np.array([255, 255, 255])
+        # white_mask = cv2.inRange(origin_img, lower_white, upper_white)
+        # res_white = cv2.bitwise_and(origin_img, origin_img, mask=white_mask)
+        #
+        # # filter yellow pixels using HSV
+        # hsv = cv2.cvtColor(origin_img, cv2.COLOR_BGR2HSV)
+        # lower_yellow = np.array([35*2, int(0.50*255), int(0.70*255)])
+        # upper_yellow = np.array([55*2, 255, 255])
         # mask_yellow = cv2.inRange(hsv, lower_yellow, upper_yellow)
         # res_yellow = cv2.bitwise_and(origin_img, origin_img, mask=mask_yellow)
         #
-        # return cv2.addWeighted(res_white, 1.0, res_yellow, 1., 0.)
         # return cv2.bitwise_or(res_white, res_yellow)
-
-        return res_white
 
     def sort_lines_by_y(self, lines):
         # sort by Y values
