@@ -1,4 +1,4 @@
-#**Finding Lane Lines on the Road** 
+# **Finding Lane Lines on the Road** 
 
 ---
 
@@ -12,7 +12,7 @@ The goals / steps of this project are the following:
 
 ### Reflection
 
-###1. Pipeline
+### 1. Pipeline
 
 My pipeline consisted of the following steps (implemented in file [LaneLinesFinder.py](LaneLinesFinder.py)):
 
@@ -33,6 +33,7 @@ My pipeline consisted of the following steps (implemented in file [LaneLinesFind
 
 I have disabled filtering yellow pixels code, cause color ranges, I used to separate pixels,
 give good result for Challenge video, but for Yellow case such filtering gives worse result.
+
 On the other hand currently used filtering produces a lot of noisy edges/lines 
 on the Challenge video (cause retains wide range pixels) on the bright piece of the road (Red colors - line segments detected by HoughLines, Green - Left Lane, Blue - Right Lane):
 
@@ -45,7 +46,7 @@ Then I have added averaging a lane line fit model using last (by default 10) mod
 <img src="test_images/challenge-img-105-averaged-model.png" width="480" alt="Averaged model" />
 
 
-###2. Potential shortcomings
+### 2. Potential shortcomings
 
 My pipeline is not robust, I'm not sure that it will give a good result for more complex cases: 
 * other cars ahead of us
@@ -59,7 +60,7 @@ I tried to solve the last pointed case (winding roads at the Challenge case) usi
 but it gave very unstable result. I think because my edge/lines detector did not detect all necessary lines.
 
 
-###3. Possible improvements
+### 3. Possible improvements
 
 I think testing all above pointed potential shortcoming cases will produce a lot of the information for further improvements.
 
